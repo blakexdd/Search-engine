@@ -9,9 +9,12 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from stop_words import get_stop_words
+from nltk.corpus import stopwords
+import pickle
 
 
-org_names = ['yandex', 'apple', 'samsung', 'mercedes', 'vk', 'ibm', 'McDonald’s', 'Coca-Cola',
+org_names = ['yandex', 'apple', 'samsung', 'mercedes',
              'Oracle', 'Walt Disney', 'General Electric']
 
 y_dict = {}
@@ -23,10 +26,9 @@ print(y_dict)
 
 pages_list = []
 
-X_test = ['Комания по продаже автомобилей', 'поисковой сервис', 'яндекс', 'фастфуд', 'вредная еда',
-          'мультфильмы для детей', 'социальная сеть']
-y_test = ['mercedes', 'yandex', 'yandex', 'McDonald’s', 'McDonald’s',
-          'Walt Disney', 'vk']
+stop_words = list(get_stop_words('ru'))
+nltk_words = list(stopwords.words('russian'))
+stop_words.extend(nltk_words)
 
 # initializing features and samples lists
 X = []
@@ -81,12 +83,9 @@ vectorizer = CountVectorizer()
 X_train_transformed = vectorizer.fit_transform(X_train)
 X_test_transformed = vectorizer.transform(X_test)
 
-model = SVC()
-model.fit(X_train_transformed, y_train)
-
-pipe = Pipeline([('vect', CountVectorizer()),
+pipe = Pipeline([('vect', CountVectorizer(min_df = 3, stop_words=stop_words)),
                 ('tfidf', TfidfTransformer()),
-                ('clf', SVC())])
+                ('clf', SVC(random_state=1))])
 
 parameters = {'vect__ngram_range': [(1, 1), (1, 2)],
              'tfidf__use_idf': (True, False),
@@ -104,3 +103,5 @@ for (org, i) in enumerate(org_names):
 predicted = grid_s_fit.predict(X_test)
 
 accuracy_score(y_test, predicted)
+
+pickle.dump(grid_s_fit, open('model.sav', 'wb'))
